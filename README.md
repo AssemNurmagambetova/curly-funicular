@@ -219,7 +219,7 @@ select count(*) as total_sales from retail_sales;
 select count(distinct customer_id) as total_customers from retail_sales;
 
 -- Unique product categories
-SELECT DISTINCT category FROM retail_sales;
+select distinct category FROM retail_sales;
 
 ```
 
