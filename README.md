@@ -1,341 +1,411 @@
-##Retail Sales Analysis SQL Project		
-                
-Project Overview
+
+# Retail Sales Analysis SQL Project
+
+## Project Overview
+
 This project presents a comprehensive analysis of retail sales data using SQL. The goal of the project is to extract valuable business insights from transaction data, identify key performance indicators, understand customer behavior, and determine sales trends.
 
 The project covers the following stages:
 
-Database structure creation.
+-   Database structure creation.
+    
+-   Data import from a CSV file.
+    
+-   Data cleaning and preprocessing.
+    
+-   Data exploration to obtain basic statistics.
+    
+-   In-depth analysis of business questions covering general sales, product categories, customer demographics, and temporal trends.
+    
+-   Identification of data quality issues and their implications.
+    
 
-Data import from a CSV file.
+## Dataset
 
-Data cleaning and preprocessing.
+The `Retail Sales Analysis_utf.csv` dataset contains information about retail sales transactions. It includes the following columns:
 
-Data exploration to obtain basic statistics.
+-   `transactions_id`: Unique transaction identifier.
+    
+-   `sale_date`: Date of sale.
+    
+-   `sale_time`: Time of sale.
+    
+-   `customer_id`: Customer identifier.
+    
+-   `gender`: Customer's gender.
+    
+-   `age`: Customer's age.
+    
+-   `category`: Category of the product sold.
+    
+-   `quantity`: Quantity of items sold.
+    
+-   `price_per_unit`: Price per unit of the item.
+    
+-   `cogs`: Cost of goods sold.
+    
+-   `total_sale`: Total sale amount.
+    
 
-In-depth analysis of business questions covering general sales, product categories, customer demographics, and temporal trends.
+## Database Setup and Data Import (MySQL)
 
-Identification of data quality issues and their implications.
-
-Dataset
-The Retail Sales Analysis_utf.csv dataset contains information about retail sales transactions. It includes the following columns:
-
-transactions_id: Unique transaction identifier.
-
-sale_date: Date of sale.
-
-sale_time: Time of sale.
-
-customer_id: Customer identifier.
-
-gender: Customer's gender.
-
-age: Customer's age.
-
-category: Category of the product sold.
-
-quantity: Quantity of items sold.
-
-price_per_unit: Price per unit of the item.
-
-cogs: Cost of goods sold.
-
-total_sale: Total sale amount.
-
-Database Setup and Data Import (MySQL)
 To reproduce this analysis, you will need a MySQL server installed.
 
-1. Database and Table Creation
--- Create database
-CREATE DATABASE IF NOT EXISTS sql_projects;
+### 1. Database and Table Creation
 
--- Use the created database
-USE sql_projects;
+```
+create database sql_projects;
 
--- Drop table if it exists (for a clean start)
-DROP TABLE IF EXISTS retail_sales;
+drop table  if exists retail_sales;
 
--- Create retail_sales table
-CREATE TABLE retail_sales
+create table retail_sales
 (
-    transactions_id INT PRIMARY KEY,
-    sale_date DATE,
-    sale_time TIME,
-    customer_id INT,
-    gender VARCHAR(15),
-    age INT,
-    category VARCHAR(15),
-    quantity INT,
-    price_per_unit FLOAT,
-    cogs FLOAT,
-    total_sale FLOAT
+transactions_id int primary key,
+sale_date date,
+sale_time time,
+customer_id int,
+gender varchar(15), 
+age int,
+category varchar(15), 
+quantity int,
+price_per_unit float, 
+cogs float, 
+total_sale float
 );
 
-2. Data Import
-To import data from Retail Sales Analysis_utf.csv, use the LOAD DATA LOCAL INFILE command.
+```
 
-Important notes before importing:
+### 2. Data Import
 
-local_infile: To use LOAD DATA LOCAL INFILE, this option must be enabled on both the MySQL server side and the client side.
+To import data from `Retail Sales Analysis_utf.csv`, use the `LOAD DATA LOCAL INFILE` command.
 
-On the server: Add local_infile=1 to the [mysqld] section of your my.ini (or my.cnf) file and restart the MySQL server.
+**Important notes before importing:**
 
-Example path to my.ini on Windows: C:\ProgramData\MySQL\MySQL Server 8.0\my.ini
+-   **`local_infile`:** To use `LOAD DATA LOCAL INFILE`, this option must be enabled on both the MySQL server side and the client side.
+    
+    -   **On the server:** Add `local_infile=1` to the `[mysqld]` section of your `my.ini` (or `my.cnf`) file and restart the MySQL server.
+        
+        -   Example path to `my.ini` on Windows: `C:\ProgramData\MySQL\MySQL Server 8.0\my.ini`
+            
+    -   **On the client (MySQL Workbench):** In the connection settings (usually under the "Advanced" or "SSL" tab), add `OPT_LOCAL_INFILE=1` in the "Others" or "Connection Arguments" field. Then reconnect to the server.
+        
+-   **File Path:** Ensure that the path to your CSV file `C:\Users\user\Desktop\Retail Sales Analysis_utf.csv` is absolutely accurate. Use forward slashes (`/`) or double backslashes (`\\`) in the path.
+    
 
-On the client (MySQL Workbench): In the connection settings (usually under the "Advanced" or "SSL" tab), add OPT_LOCAL_INFILE=1 in the "Others" or "Connection Arguments" field. Then reconnect to the server.
-
-File Path: Ensure that the path to your CSV file C:\Users\user\Desktop\Retail Sales Analysis_utf.csv is absolutely accurate. Use forward slashes (/) or double backslashes (\\) in the path.
-
+```
 USE sql_projects;
+load data local infile 'C:\\Users\\user\\Desktop\\my project\\SQL\\Retail Sales Analysis_utf.csv'
+into table retail_sales
+fields terminated by ','
+enclosed by '"'
+lines terminated by '\n'
+ignore 1 lines;
 
-LOAD DATA LOCAL INFILE 'C:/Users/user/Desktop/Retail Sales Analysis_utf.csv'
--- Or 'C:\\Users\\user\\Desktop\\Retail Sales Analysis_utf.csv'
-INTO TABLE retail_sales
-FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 LINES; -- Skip the header row
+```
 
-Verify Import:
+**Verify Import:**
 
-SELECT COUNT(*) FROM retail_sales;
-SELECT * FROM retail_sales WHERE transactions_id = 679; -- Example to check a specific row
+```
+select count(*) from retail_sales;
+select * from retail_sales where transactions_id = 679;
 
-Data Cleaning and Preprocessing
+```
+
+## Data Cleaning and Preprocessing
+
 After data import, cleaning steps were performed to ensure the quality of the analysis.
 
-1. Correcting 0 to NULL in Numeric Columns
-During import, empty values in the CSV file might have been interpreted as 0 in numeric columns. The following queries convert 0 back to NULL for fields where 0 is not a logically valid value (e.g., for missing data).
+### 1. Correcting `0` to `NULL` in Numeric Columns
 
-UPDATE retail_sales SET age = NULL WHERE age = 0;
-UPDATE retail_sales SET quantity = NULL WHERE quantity = 0;
-UPDATE retail_sales SET price_per_unit = NULL WHERE price_per_unit = 0;
-UPDATE retail_sales SET cogs = NULL WHERE cogs = 0;
-UPDATE retail_sales SET total_sale = NULL WHERE total_sale = 0;
+During import, empty values in the CSV file might have been interpreted as `0` in numeric columns. The following queries convert `0` back to `NULL` for fields where `0` is not a logically valid value (e.g., for missing data).
 
--- Note: For sale_date, sale_time, customer_id, if they were imported as 0,
--- this could also indicate issues, but they usually import as NULL
--- or throw an error if they don't match the data type.
--- UPDATE retail_sales SET sale_date = NULL WHERE sale_date = '0000-0000-00'; -- If dates were imported as 0
--- UPDATE retail_sales SET sale_time = NULL WHERE sale_time = '00:00:00'; -- If times were imported as 0
--- UPDATE retail_sales SET customer_id = NULL WHERE customer_id = 0;
+```
+UPDATE retail_sales
+SET sale_date = NULL
+WHERE sale_date = 0;
 
-2. Deleting Rows with NULL Values
+UPDATE retail_sales
+SET sale_time = NULL
+WHERE sale_time = 0;
+
+UPDATE retail_sales
+SET customer_id = NULL
+WHERE customer_id = 0;
+
+UPDATE retail_sales
+SET age = NULL
+WHERE age = 0;
+
+UPDATE retail_sales
+SET quantity = NULL
+WHERE quantity = 0;
+
+UPDATE retail_sales
+SET  price_per_unit= NULL
+WHERE price_per_unit = 0;
+
+UPDATE retail_sales
+SET  cogs= NULL
+WHERE cogs = 0;
+
+UPDATE retail_sales
+SET  total_sale= NULL
+WHERE total_sale = 0;
+
+```
+
+### 2. Deleting Rows with `NULL` Values
+
 Rows with missing critical transaction data (excluding age, as sales could have occurred) were deleted.
 
-SELECT * FROM retail_sales
-WHERE
-    transactions_id IS NULL
-    OR sale_date IS NULL
-    OR sale_time IS NULL
-    OR customer_id IS NULL
-    OR gender IS NULL
-    -- OR age IS NULL -- Age is not deleted as sales could have occurred
-    OR category IS NULL
-    OR quantity IS NULL
-    OR price_per_unit IS NULL
-    OR cogs IS NULL
-    OR total_sale IS NULL;
+```
+Select * from retail_sales
+where 
+transactions_id is null
+or  
+sale_date is null
+or
+sale_time is null
+or  
+customer_id is null
+or 
+gender is null
+or 
+age is null
+or  
+category is null
+or 
+quantity is null
+or 
+price_per_unit is null
+or  
+cogs is null
+or 
+total_sale is null;
 
-DELETE FROM retail_sales
-WHERE
-    transactions_id IS NULL
-    OR sale_date IS NULL
-    OR sale_time IS NULL
-    OR customer_id IS NULL
-    OR gender IS NULL
-    OR category IS NULL
-    OR quantity IS NULL
-    OR price_per_unit IS NULL
-    OR cogs IS NULL
-    OR total_sale IS NULL;
+delete from retail_sales
+where 
+transactions_id is null
+or  
+sale_date is null
+or
+sale_time is null
+or  
+customer_id is null
+or 
+gender is null
+or  
+category is null
+or 
+quantity is null
+or 
+price_per_unit is null
+or  
+cogs is null
+or 
+total_sale is null;
 
-Data Exploration
+```
+
+## Data Exploration
+
 Basic queries to understand the overall volume and uniqueness of the data.
 
--- Total number of sales (transactions)
-SELECT COUNT(*) AS total_transactions FROM retail_sales;
+```
+-- total quantity of sales
+select count(*) as total_sales from retail_sales;
 
--- Total number of unique customers
-SELECT COUNT(DISTINCT customer_id) AS total_unique_customers FROM retail_sales;
+-- amount of unique customers
+select count(distinct customer_id) as total_customers from retail_sales;
 
 -- Unique product categories
 SELECT DISTINCT category FROM retail_sales;
 
-Data Analysis and Business Insights
-General Sales Analysis
--- Total sales amount
-SELECT SUM(total_sale) AS total_sales FROM retail_sales;
+```
 
--- Average sale per transaction
-SELECT ROUND(AVG(total_sale), 2) AS average_sale_per_transaction FROM retail_sales;
+## Data Analysis and Business Insights
 
--- Total cost of goods sold
-SELECT ROUND(SUM(cogs), 2) AS total_cogs FROM retail_sales;
+### General Sales Analysis
 
--- Gross profit
-SELECT ROUND(SUM(total_sale) - SUM(cogs), 2) AS gross_profit FROM retail_sales;
+```
+-- total amount of sales
+select sum(total_sale) as total_sales from retail_sales; 
 
-Analysis by Product Categories
--- Categories generating the most gross profit
-SELECT
-    category,
-    SUM(total_sale) AS total_sales,
-    ROUND(SUM(cogs), 2) AS total_cogs,
-    ROUND((SUM(total_sale) - SUM(cogs)), 2) AS gross_profit
-FROM retail_sales
-GROUP BY category
-ORDER BY gross_profit DESC;
+-- average sale for transaction
+select round(avg(total_sale), 2) as average_sale_per_trasaction from retail_sales; 
 
--- Percentage profit margin by category
-SELECT
-    category,
-    ROUND(((SUM(total_sale) - SUM(cogs)) / SUM(total_sale)) * 100, 2) AS margin_profit_percentage
-FROM retail_sales
-GROUP BY category
-ORDER BY margin_profit_percentage DESC;
+-- total cost of good sold 
+select round(sum(cogs),2) as total_cog from retail_sales; 
 
--- Average price per unit by category
-SELECT
-    category,
-    ROUND(AVG(price_per_unit), 2) AS avg_price_per_unit
-FROM retail_sales
-GROUP BY category
-ORDER BY avg_price_per_unit DESC;
+-- gross profit 
+select round(sum(total_sale) - sum(cogs), 2) as gross_profit from retail_sales; 
 
--- Total quantity sold by category
-SELECT
-    category,
-    SUM(quantity) AS total_quantity_sold
-FROM retail_sales
-GROUP BY category
-ORDER BY total_quantity_sold DESC;
+```
 
-Demographic Analysis
--- Sales distribution by gender: total sales, transactions, average purchase amount
-SELECT
-    gender,
-    SUM(total_sale) AS total_sales,
-    COUNT(transactions_id) AS number_of_transactions,
-    ROUND(AVG(total_sale), 2) AS avg_sum_of_purchase
-FROM retail_sales
-GROUP BY gender
-ORDER BY total_sales DESC;
+### Analysis by Product Categories
 
--- Sales distribution by age group: total sales, transactions, average purchase amount
-SELECT
-    CASE
-        WHEN age IS NULL THEN 'unknown'
-        WHEN age BETWEEN 18 AND 19 THEN 'Teen'
-        WHEN age BETWEEN 20 AND 39 THEN 'Young Adult'
-        WHEN age BETWEEN 40 AND 59 THEN 'Middle Age Adult'
-        WHEN age >= 60 THEN 'Senior Adult'
-        ELSE 'Another'
-    END AS age_group,
-    SUM(total_sale) AS total_sales,
-    COUNT(transactions_id) AS number_of_transactions,
-    ROUND(AVG(total_sale), 2) AS avg_sum_of_purchase
-FROM retail_sales
-GROUP BY age_group
-ORDER BY total_sales DESC;
+```
+-- which category brings more gross profit
+select sum(total_sale) as total_sales, round(sum(cogs),2) as total_cogs, category, round((sum(total_sale)- sum(cogs)), 2) as gross_profit
+from retail_sales
+group by category
+order by gross_profit desc; 
 
--- Popular categories by gender
-SELECT
-    gender,
-    category,
-    COUNT(transactions_id) AS number_of_transactions,
-    SUM(total_sale) AS total_sales,
-    ROUND(AVG(total_sale), 2) AS avg_sum_of_purchase
-FROM retail_sales
-GROUP BY gender, category
-ORDER BY gender, number_of_transactions DESC;
+-- percentage margin profit by category 
+select category, 
+round(((sum(total_sale)-sum(cogs))/sum(total_sale))*100,2) as margin_profit
+from retail_sales
+group by category
+order by margin_profit desc;
 
-Sales Analysis by Time
--- Sales by year
-SELECT
-    YEAR(sale_date) AS sale_year,
-    SUM(total_sale) AS total_sales
-FROM retail_sales
-GROUP BY sale_year
-ORDER BY sale_year DESC;
+-- average price per unit by category 
+select round(avg(price_per_unit), 2) as avg_price, category
+from retail_sales 
+group by category
+order by avg_price desc; 
 
--- Sales by year and month
-SELECT
-    DATE_FORMAT(sale_date, '%Y-%m') AS sale_month,
-    SUM(total_sale) AS total_sales
-FROM retail_sales
-GROUP BY sale_month
-ORDER BY total_sales DESC;
+-- sold quantitis by category
+select sum(quantity) as total_quantity_sold, category
+from retail_sales 
+group by category
+order by total_quantity_sold desc; 
 
--- Popular time for purchase (by shift)
-SELECT
-    CASE
-        WHEN TIME(sale_time) BETWEEN '05:00:00' AND '11:59:59' THEN 'Morning'
-        WHEN TIME(sale_time) BETWEEN '12:00:00' AND '17:59:59' THEN 'Day'
-        WHEN TIME(sale_time) BETWEEN '18:00:00' AND '21:59:59' THEN 'Evening'
-        WHEN TIME(sale_time) >= '22:00:00' OR TIME(sale_time) < '05:00:00' THEN 'Night'
-        ELSE 'Another'
-    END AS time_of_day,
-    COUNT(transactions_id) AS number_of_transactions,
-    SUM(total_sale) AS total_sales_in_shift,
-    ROUND(AVG(total_sale), 2) AS average_sale_in_shift
-FROM retail_sales
-GROUP BY time_of_day
-ORDER BY number_of_transactions DESC;
+```
 
-Client Analysis
--- Total number of customers
-SELECT COUNT(DISTINCT customer_id) AS total_customers FROM retail_sales;
+### Demographic Analysis
 
--- Top customer by amount spent
-SELECT
-    customer_id,
-    SUM(total_sale) AS total_sales
-FROM retail_sales
-GROUP BY customer_id
-ORDER BY total_sales DESC
-LIMIT 1;
+```
+-- sales distribution by gender: total_sales, transactions, average sum for transaction
+select gender, sum(total_sale) as total_sales, count(transactions_id) as number_of_transactions, 
+round(avg(total_sale),2) as avg_sum_of_purchase
+from retail_sales
+group by gender
+order by total_sales desc;
 
-Additional Questions
--- Retrieve all columns for sales made on '2022-11-05'
-SELECT * FROM retail_sales
-WHERE sale_date = '2022-11-05';
+-- sales distribution by age group: total_sales, transactions, average sum for transaction
+select 
+case 
+	when age is null then 'unknown'
+    when age between 18 and 19 then 'Teen'
+    when age between 20 and 39 then 'Young Adult'
+    when age between 40 and 59 then 'Middle Age Adult'
+    when age >=60 then 'Senior Adult'
+    else 'Another'
+end as age_group, 
+sum(total_sale) as total_sales, count(transactions_id) as number_of_transactions, 
+round(avg(total_sale),2) as avg_sum_of_purchase
+from retail_sales
+group by age_group
+order by total_sales desc;
 
--- Retrieve all transactions where the category is 'Clothing' and the quantity sold is
--- greater than 4 in the month of Nov-2022
-SELECT * FROM retail_sales
-WHERE
-    category = 'Clothing'
-    AND quantity > 4
-    AND DATE_FORMAT(sale_date, '%Y-%m') = '2022-11';
+-- popular category by gender
+select gender, category,
+count(transactions_id) as number_of_transactions, 
+sum(total_sale) as total_sales,  
+round(avg(total_sale), 2) as avg_sum_of_purchase   
+from retail_sales
+group by gender, category
+order by number_of_transactions desc;
 
--- Retrieve all transactions where total_sale is greater than 1000
-SELECT * FROM retail_sales
-WHERE total_sale > 1000;
+```
 
-Data Quality Insights (Important!)
-During the analysis, a critical data quality issue was identified in the customer_id column.
+### Sales Analysis by Time
 
+```
+-- sales by year
+select year(sale_date) as sale_year, sum(total_sale) as total_sales
+from retail_sales
+group by sale_year
+order by sale_year desc;
+
+-- sales by year and month
+select date_format(sale_date, '%Y-%m') sale_month, sum(total_sale) as total_sales
+from retail_sales
+group by sale_month
+order by total_sales desc;
+
+-- popular time for purchase
+select 
+case 
+	when sale_time between '05:00:00' and '11:59:59' then 'Morning'
+	when sale_time between '12:00:00' and '17:59:59' then 'Day'
+    when sale_time between '18:00:00' and '21:59:59' then 'Evening'
+	when sale_time>= '22:00:00' or sale_time <'05:00:00' then 'Night'
+    else 'Another'
+    end as time_of_day, 
+      count(transactions_id) as number_of_transactions
+from retail_sales
+group by time_of_day
+order by number_of_transactions desc;
+
+```
+
+### Client Analysis
+
+```
+-- amount of customers
+select count(distinct customer_id) as total_customers from retail_sales; 
+
+-- top customer by spent amount
+select customer_id, sum(total_sale) as total_sales
+from retail_sales
+group by customer_id
+order by total_sales desc
+limit 1; 
+
+```
+
+### Additional Questions
+
+```
+-- retrieve all columns for sales made on '2022-11-05
+select * from retail_sales
+where sale_date = '2022-11-05';
+
+-- retrieve all transactions where the category is 'Clothing' and the quantity sold is qual or more than 4 in the month of Nov-2022
+select * from retail_sales
+where 
+	category = 'Clothing'
+	and 
+    quantity>=4 
+    and 
+    date_format(sale_date, '%Y-%m') = '2022-11';
+    
+-- retrieve all transactions where the total_sale is greater than 1000
+select * from retail_sales
+where total_sale > 1000;
+
+```
+
+## Data Quality Insights (Important!)
+
+During the analysis, a **critical data quality issue** was identified in the `customer_id` column.
+
+```
 -- Example query that revealed the issue:
-SELECT customer_id, gender, age, COUNT(*) AS num_transactions
-FROM retail_sales
-WHERE customer_id = 16 -- Example customer_id that showed inconsistencies
-GROUP BY customer_id, gender, age
-HAVING COUNT(*) > 1; -- If the same customer_id has different gender/age
+select * from retail_sales where age is null;
 
-Upon checking customer_id, it was observed that the same customer_id can be associated with different gender and age values. This implies that customer_id in the current dataset is not a reliable unique identifier for an individual customer.
+select * from retail_sales where customer_id = 16;
 
-Implications:
+```
 
-Metrics based on COUNT(DISTINCT customer_id) (e.g., "total number of unique customers") and "top customer" analyses might be inaccurate regarding actual unique individuals.
+Upon checking `customer_id`, it was observed that the same `customer_id` can be associated with different `gender` and `age` values. This implies that `customer_id` in the current dataset **is not a reliable unique identifier for an individual customer**.
 
-Demographic analysis linked to customer_id may be skewed.
+**Implications:**
 
-Recommendations:
+-   Metrics based on `COUNT(DISTINCT customer_id)` (e.g., "total number of unique customers") and "top customer" analyses might be **inaccurate** regarding actual unique individuals.
+    
+-   Demographic analysis linked to `customer_id` may be skewed.
+    
 
-In a real project, further investigation into the data source would be required to understand the true meaning of customer_id or to find an alternative unique customer identifier.
+**Recommendations:**
 
-When presenting results, it is crucial to highlight this data limitation.
+-   In a real project, further investigation into the data source would be required to understand the true meaning of `customer_id` or to find an alternative unique customer identifier.
+    
+-   When presenting results, it is crucial to highlight this data limitation.
+    
 
-Conclusion
+## Conclusion
+
 This SQL project demonstrates the ability to perform comprehensive retail sales data analysis, identify key trends, segment customers and products, and critically evaluate data quality. The insights gained can be used to make informed business decisions in marketing, inventory management, and strategic planning.
+
